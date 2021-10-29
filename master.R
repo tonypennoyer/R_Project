@@ -5,9 +5,9 @@ library(zoo)
 library(dplyr)
 library(ggplot2)
 
-#---------------- Read file  --------------------------------------------------------------
+#---------------- Read files  -------------------------------------------------------------
 tb3 <- read.csv('Table_3_GHG_food_system_emissions.csv')
-
+mtb <- read.csv('mortality.csv')
 tb <- data.frame(tb3) 
 #------------------------------------------------------------------------------------------
 
@@ -27,6 +27,25 @@ tb <- tb %>%
 
 tb$Year <-gsub("X","",as.character(tb$Year))
 tb$Year <- as.numeric(tb$Year)
+
+mtb = subset(mtb, select = -c(Indicator.Name,Indicator.Code) )
+
+names(mtb) <- gsub("Country.Name", "name", names(mtb), fixed = TRUE)
+names(mtb) <- gsub("Country.Code", "ccode", names(mtb), fixed = TRUE)
+
+mtb <- mtb %>%  
+  pivot_longer(
+    cols = starts_with("X"),
+    names_to = "Year",
+    names_prefix = "yr",
+    values_to = "mortality",
+    values_drop_na = TRUE
+  )
+
+mtb$Year <-gsub("X","",as.character(mtb$Year))
+mtb$Year <- as.numeric(mtb$Year)
+mtb <- mtb[mtb$Year > 1989,] 
+mtb <- mtb[mtb$Year < 2016,] 
 #-------------------------------------------------------------------------------------------
 
 
@@ -35,6 +54,11 @@ zwe <- tb[tb$ccode == "ZWE",]
 usa <- tb[tb$ccode == "USA",]
 usa_p5 <- usa[usa$Year >= 2010,]
 
+#---------------- total mortality sum df  --------------------------------------------------
+mort_sum <- aggregate(x = mtb$mortality,             
+                     by = list(mtb$Year),              
+                     FUN = sum) 
+#-------------------------------------------------------------------------------------------
 
 #---------------- total ghg sum df  --------------------------------------------------------
 ghg_sum <- aggregate(x = tb$emissions,             
@@ -60,6 +84,10 @@ ghg_sum <- aggregate(x = tb$emissions,
 # Residual standard error: 365 on 24 degrees of freedom
 # Multiple R-squared:  0.6514,	Adjusted R-squared:  0.6369 
 # F-statistic: 44.86 on 1 and 24 DF,  p-value: 6.297e-07
+#-------------------------------------------------------------------------------------------
+
+#-------------- mortality ------------------------------------------------------------------
+ggplot(mort_sum,aes(x=Group.1,y=x)) + geom_point()
 #-------------------------------------------------------------------------------------------
 
 #---------------- sum of global food system emissions --------------------------------------
