@@ -4,6 +4,13 @@ library(plotly)
 library(zoo)
 library(dplyr)
 library(ggplot2)
+library(leaflet)
+library(htmlwidgets)
+library(maptools)
+library(cartogram)
+library(sp)
+library(rgdal)
+
 
 #---------------- Read files  -------------------------------------------------------------
 tb3 <- read.csv('Table_3_GHG_food_system_emissions.csv')
@@ -27,6 +34,7 @@ tb <- tb %>%
 
 tb$Year <-gsub("X","",as.character(tb$Year))
 tb$Year <- as.numeric(tb$Year)
+tb <- tb[tb$ccode != 'TKL',]
 
 mtb = subset(mtb, select = -c(Indicator.Name,Indicator.Code) )
 
@@ -48,11 +56,12 @@ mtb <- mtb[mtb$Year > 1989,]
 mtb <- mtb[mtb$Year < 2016,] 
 #-------------------------------------------------------------------------------------------
 
-
+#---------------- group ghg  ---------------------------------------------------------------
 ang <- tb[tb$ccode == "AGO",]
 zwe <- tb[tb$ccode == "ZWE",]
 usa <- tb[tb$ccode == "USA",]
 usa_p5 <- usa[usa$Year >= 2010,]
+#-------------------------------------------------------------------------------------------
 
 #---------------- total mortality sum df  --------------------------------------------------
 mort_sum <- aggregate(x = mtb$mortality,             
@@ -97,27 +106,105 @@ theme(axis.title.x = element_text(color="black", vjust=-0.35), axis.title.y = el
 xlab('Year') + ylab(expression('Total Emissions (kt of C0'[2]*')')) + stat_smooth(method = "lm", col = "red")
 #-------------------------------------------------------------------------------------------
 
+#---------------- highest and lowest emitters ----------------------------------------------
+e_sum <- tb %>% group_by(ccode) %>% summarise(emissions = sum(emissions)) 
+e_sum <- e_sum %>% arrange(across(starts_with('emissions'),desc))
+top10 <- e_sum[1:10,]
+e_sum <- e_sum %>% arrange(across(starts_with('emissions')))
+bottom10 <- e_sum[1:10,]                          
+top10
+bottom10
+t10 <- tb[(tb$ccode == 'USA' | tb$ccode == 'CHN' | tb$ccode == 'BRA' | tb$ccode == 'IDN' | tb$ccode == 'IND' | tb$ccode == 'RUS' | tb$ccode == 'CAN'
+           | tb$ccode == 'ARG' | tb$ccode == 'SDN' | tb$ccode == 'ZMB'),]
+b10 <- tb[(tb$ccode == 'MHL' | tb$ccode == 'NRU' | tb$ccode == 'SHN' | tb$ccode == 'AIA' | tb$ccode == 'TUV' | tb$ccode == 'SPM' | tb$ccode == 'TCA'
+           | tb$ccode == 'COK' | tb$ccode == 'WLF' | tb$ccode == 'VGB'),]
+# write.csv(t10,"top10.csv", row.names = FALSE)
+#-------------------------------------------------------------------------------------------
+
+#---------------- top 10 bottom 10 scatter plots  ------------------------------------------
+t10_sum <- aggregate(x = t10$emissions,             
+                     by = list(t10$Year),              
+                     FUN = sum) 
+
+b10_sum <- aggregate(x = b10$emissions,             
+                     by = list(b10$Year),              
+                     FUN = sum) 
+
+ggplot(b10_sum,aes(x=Group.1,y=x)) + geom_point() + theme_bw() +
+  ggtitle("Global Food System Emissions") +  theme(plot.title = element_text(hjust = 0.5)) + theme(axis.text.x=element_text(angle=50, size=10, vjust=0.5)) + 
+  theme(axis.title.x = element_text(color="black", vjust=-0.35), axis.title.y = element_text(color="black" , vjust=0.35)) +
+  xlab('Year') + ylab(expression('Total Emissions (kt of C0'[2]*')')) + stat_smooth(method = "lm", col = "red")
+#-------------------------------------------------------------------------------------------
 
 
-# bold text
-# theme(plot.title = element_text(size=20, face="bold",  margin = margin(10, 0, 10, 0)))
-                       
+#### MAKE INTERACTIVE MAP ########
+# world_map <- st_read('World_Countries__Generalized_.shp')
+# st_geometry_type(world_map)
+# st_crs(world_map)
+# st_bbox(world_map)
+# world_map
+# ggplot() +
+#   geom_sf(data = world_map, size = 10, color = 'black', fill = 'cyan1') +
+#   ggtitle('world_map_boundary_plot') +
+#   coord_sf()
+# 
+
+map <- leaflet() %>% 
+  addTiles()
+
+map
+
+
+
+
+..# labels <- sprintf(
+#   '<strong>%s</strong>br/>%g Food Emissions',
+#   tb$name,tb$emissions) %>%
+#   lapply(htmltools::HTML)
+# 
+# pal <- colorBin(palette = 'OrRd',9,domain = tb$emissions)
+# 
+# map_interactive <- tb %>%
+#   st_transform(crs = '+init=epsg:4326') %>%
+#   leaflet() %>%
+#   addProviderTiles(provider = 'cartoDB.Positron') %>%
+#   addPolygons(label = labels,
+#               stroke = FALSE,
+#               opacity = 1,
+#               fillOpacity = 0.7,
+#               fillColor = ~pal(emissions),
+#               highlightOptions = highlightOptions(weight = 5,
+#                                                   fillOpacity = 1,
+#                                                   color = 'black',
+#                                                   opacity = 1,
+#                                                   bringToFront = TRUE))
+# addLegend('bottomright',
+#           pal = pal,
+#           values = ~ emissions,
+#           title = 'Food Emissions by Country',
+#           opacity = 0.7)
+# 
+# saveWidget(l, "emissions_test.html")
+#   
 
 
 
 
 
-ggplot(usa,aes(x=Year,y=emissions)) + geom_line()
-xlab('Year') # for the x axis label
-ylab('Emissions: ')
-
-ggplot(ang,aes(x=Year,y=emissions)) + geom_line()
-
-       
 
 
 
-# ang <- tb[tb$ccode == "AGO",]  
+
+
+
+
+
+
+
+
+
+
+
 
 
 
