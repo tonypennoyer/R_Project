@@ -2,25 +2,35 @@ library(openxlsx)
 library(tidyverse)
 library(plotly)
 library(zoo)
+library(readr)
 library(dplyr)
 library(ggplot2)
 library(leaflet)
 library(htmlwidgets)
 library(maptools)
 library(cartogram)
+library(broom)
 library(sp)
 library(rgdal)
 
 
 #---------------- Read files  -------------------------------------------------------------
 tb3 <- read.csv('Table_3_GHG_food_system_emissions.csv')
-mtb <- read.csv('mortality.csv')
+cord_df <- read.csv('coords.csv')
+# mtb <- read.csv('mortality.csv')
 tb <- data.frame(tb3) 
+cord_df <- data.frame(cord_df)
 #------------------------------------------------------------------------------------------
 
 #---------------- Stage 1 Cleaning --------------------------------------------------------
 names(tb) <- gsub("Name", "name", names(tb), fixed = TRUE)
 names(tb) <- gsub("Country_code_A3", "ccode", names(tb), fixed = TRUE)
+names(cord_df) <- gsub("Alpha.3.code", "ccode", names(cord_df), fixed = TRUE)
+names(cord_df) <- gsub("Country", "name", names(cord_df), fixed = TRUE)
+
+tb <-inner_join(tb,cord_df,by='name')
+
+tb[ , order(names(tb))]
 names(tb)
 
 tb <- tb %>%  
@@ -35,6 +45,9 @@ tb <- tb %>%
 tb$Year <-gsub("X","",as.character(tb$Year))
 tb$Year <- as.numeric(tb$Year)
 tb <- tb[tb$ccode != 'TKL',]
+tb <- tb[ -c(5) ]
+tb <- tb[ -c(3:4) ]
+names(tb) <- gsub("ccode.x", "ccode", names(tb), fixed = TRUE)
 
 mtb = subset(mtb, select = -c(Indicator.Name,Indicator.Code) )
 
@@ -149,15 +162,33 @@ ggplot(b10_sum,aes(x=Group.1,y=x)) + geom_point() + theme_bw() +
 #   coord_sf()
 # 
 
-map <- leaflet() %>% 
+tb %>% order[tb$name]
+
+data.SP <- SpatialPointsDataFrame()
+
+m <- leaflet() %>% 
   addTiles()
 
-map
+world_spdf <- readOGR(
+  dsn = "/Users/tonypennoyer/desktop/R_data/wrld_shape",
+  layer="TM_WORLD_BORDERS",
+  verbose = FALSE
+  )
 
+spdf_fortified <- tidy(my_spdf)
 
+world_spdf@data$POP2005[ which(world_spdf@data$POP2005 == 0)] = NA
+world_spdf@data$POP2005 <- as.numeric(as.character(world_spdf@data$POP2005)) / 1000000 %>% round(2)
 
+mypalette <- colorNumeric( palette="viridis", domain=world_spdf@data$POP2005, na.color="transparent")
+mypalette(c(45,43))
 
-..# labels <- sprintf(
+# Basic choropleth with leaflet?
+m <- leaflet(world_spdf)%>% addTiles()  %>% setView( lat=10, lng=0 , zoom=2) %>%
+  addPolygons( stroke = FALSE, fillOpacity = 0.5, smoothFactor = 0.5, color = ~colorQuantile("YlOrRd", POP2005)(POP2005) )
+m
+
+# labels <- sprintf(
 #   '<strong>%s</strong>br/>%g Food Emissions',
 #   tb$name,tb$emissions) %>%
 #   lapply(htmltools::HTML)
