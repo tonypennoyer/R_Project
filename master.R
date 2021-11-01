@@ -10,6 +10,7 @@ library(htmlwidgets)
 library(maptools)
 library(cartogram)
 library(broom)
+library(plotly)
 library(sp)
 library(rgdal)
 
@@ -143,11 +144,96 @@ b10_sum <- aggregate(x = b10$emissions,
                      by = list(b10$Year),              
                      FUN = sum) 
 
-ggplot(b10_sum,aes(x=Group.1,y=x)) + geom_point() + theme_bw() +
-  ggtitle("Global Food System Emissions") +  theme(plot.title = element_text(hjust = 0.5)) + theme(axis.text.x=element_text(angle=50, size=10, vjust=0.5)) + 
+ggplot(t10_sum,aes(x=Group.1,y=x)) + geom_point() + theme_bw() +
+  ggtitle("10 Highest Emitters") +  theme(plot.title = element_text(hjust = 0.5)) + theme(axis.text.x=element_text(angle=50, size=10, vjust=0.5)) + 
   theme(axis.title.x = element_text(color="black", vjust=-0.35), axis.title.y = element_text(color="black" , vjust=0.35)) +
   xlab('Year') + ylab(expression('Total Emissions (kt of C0'[2]*')')) + stat_smooth(method = "lm", col = "red")
 #-------------------------------------------------------------------------------------------
+(t10_sum[26,2] - t10_sum[21,2]) / t10_sum[21,2] * 100
+(b10_sum[26,2] - b10_sum[21,2]) / b10_sum[21,2] * 100
+
+tot_sum <- tb[tb$Year == 2015,]
+tot_10_sum <- t10[t10$Year == 2015,]
+tot_sum <- aggregate(x = tot_sum$emissions,             
+                     by = list(tot_sum$Year),              
+                     FUN = sum) 
+
+tot_10_sum <- aggregate(x = tot_10_sum$emissions,             
+                    by = list(tot_10_sum$Year),              
+                    FUN = sum) 
+
+
+tot_sum
+tot_10_sum
+
+
+
+t10_sum
+
+top_10_percent <- tb %>%
+          group_by(Year) %>%
+          arrange(Year,desc(emissions)) %>%
+          filter(emissions >= quantile(emissions,.90))
+
+t51_90_percent <- tb %>%
+  group_by(Year) %>%
+  arrange(Year,desc(emissions)) %>%
+  filter((emissions < quantile(emissions,.9)) & (emissions >= quantile(emissions,.51)))
+
+b50_percent <- tb %>%
+  group_by(Year) %>%
+  arrange(Year,desc(emissions)) %>%
+  filter(emissions < quantile(emissions,.51))
+
+
+top_10_percent <- aggregate(x = top_10_percent$emissions,             
+                        by = list(top_10_percent$Year),              
+                        FUN = sum) 
+t51_90_percent <- aggregate(x = t51_90_percent$emissions,             
+                            by = list(t51_90_percent$Year),              
+                            FUN = sum) 
+b50_percent <- aggregate(x = b50_percent$emissions,             
+                            by = list(b50_percent$Year),              
+                            FUN = sum) 
+
+
+
+a <- plot_ly(x = top_10_percent$Group.1, y = top_10_percent$x, type="scatter", mode="none", fill = "tozeroy")
+a <- add_trace(a, x = t51_90_percent$Group.1, y = t51_90_percent$x, type="scatter", mode="none", fill = "tonexty")
+a <- add_trace(a, x = b50_percent$Group.1, y = b50_percent$x, type="scatter", mode="none", fill = "tonexty")
+a
+
+#------------------------ Stacked Area Plotly ------------------------------------------
+
+fig <- plot_ly(x = ~top_10_percent$Group.1, y = ~top_10_percent$x, type = 'scatter', mode = 'lines', name = 'Top 10%', fill = 'tozeroy')
+fig <- fig %>% add_trace(x = ~t51_90_percent$Group.1, y = ~t51_90_percent$x, name = '51-90%', fill = 'tozeroy')
+fig <- fig %>% add_trace(x = ~b50_percent$Group.1, y = ~b50_percent$x, name = 'Bottom 50%', fill = 'tozeroy')
+fig <- fig %>% layout(xaxis = list(title = 'Year'),
+                      xaxis = showgrid = FALSE
+                      yaxis = list(title = 'Kt C02'),
+                      title ='Share of Food System Emissions')
+
+fig
+
+
+#---------------------------------- Area Plot ------------------------------------------
+p <- t10_sum %>%
+  ggplot( aes(x=Group.1, y=x)) +
+  geom_area(fill="#69b3a2", alpha=0.5) +
+  geom_line(color="#69b3a2") +
+  ylab("top10")
+
+# Turn it interactive with ggplotly
+p <- ggplotly(p)
+p <- add_trace(p, x = b10_sum$Group.1, y = b10_sum$x, type="scatter", mode="markers", fill = "tonexty")
+p
+#-------------------------------------------------------------------------------------------
+
+
+
+
+
+
 
 
 #### MAKE INTERACTIVE MAP ########
