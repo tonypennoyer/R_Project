@@ -3,6 +3,7 @@ library(tidyverse)
 library(sp)
 library(sf)
 library(htmltools)
+library(htmlwidgets)
 library(leaflet)
 library(rgdal)
 library(raster)
@@ -25,6 +26,9 @@ tb <- tb %>%
 tb$Year <-gsub("X","",as.character(tb$Year))
 tb$Year <- as.numeric(tb$Year)
 tb <- tb[tb$ccode != 'TKL',]
+
+
+write.csv(tb,'cleaned_main.csv')
 
 tb2015 <- tb[tb$Year == 2015,]
 
