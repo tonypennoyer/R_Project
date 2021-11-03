@@ -18,7 +18,7 @@ library(rgdal)
 #---------------- Read files  -------------------------------------------------------------
 tb3 <- read.csv('Table_3_GHG_food_system_emissions.csv')
 cord_df <- read.csv('coords.csv')
-# mtb <- read.csv('mortality.csv')
+pop <- read.csv('population.csv')
 tb <- data.frame(tb3) 
 cord_df <- data.frame(cord_df)
 #------------------------------------------------------------------------------------------
@@ -68,6 +68,25 @@ mtb$Year <-gsub("X","",as.character(mtb$Year))
 mtb$Year <- as.numeric(mtb$Year)
 mtb <- mtb[mtb$Year > 1989,] 
 mtb <- mtb[mtb$Year < 2016,] 
+
+
+
+pop = subset(pop, select = -c(Indicator.Name,Indicator.Code))
+pop <- pop %>%  
+  pivot_longer(
+    cols = starts_with("X"),
+    names_to = "Year",
+    names_prefix = "yr",
+    values_to = "Population",
+    values_drop_na = TRUE
+  )
+names(pop) <- gsub("Country.Name", "region", names(pop), fixed = TRUE)
+names(pop) <- gsub("Country.Code", "ccode", names(pop), fixed = TRUE)
+pop$Year <-gsub("X","",as.character(pop$Year))
+pop$Year <- as.numeric(pop$Year)
+pop15 <- pop[(pop$Year == 2015),]
+
+
 #-------------------------------------------------------------------------------------------
 
 #---------------- group ghg  ---------------------------------------------------------------
