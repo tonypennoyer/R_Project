@@ -16,10 +16,6 @@ tb <- subset(tb, is.element(tb$region,countries$GEOUNIT))
 countries <- subset(countries, is.element(countries$GEOUNIT,tb$region))
 tb <- tb[order(match(tb$region, countries$GEOUNIT)),]
 
-bins <- c(0,25,50,100,200,500,1000,2500)
-pal <- colorBin('Reds', domain = c(0,2500),bins = bins)
-
-
 ui <- dashboardPage(
     skin = 'red',
     dashboardHeader(title = 'Food System Emissions'),
@@ -30,9 +26,10 @@ ui <- dashboardPage(
                     value = c(min(tb$Year)),
                     sep = "",
                     step = 1),
-        selectInput(inputId = "sel_dtype",
-                    label = 'Choose data type: ',
-                    list("Total Emissions","Emissions per 1000 people"))
+        selectInput("dtype",'Choose data type: ', 
+                    c("Total Emissions" = "emissions",
+                      "Emissions per capita" = "em_ratio"),
+                    selected = "Total Emissions")
     ),
     dashboardBody(
         fluidRow(box(width = 12, leafletOutput(outputId = "mymap"))),
