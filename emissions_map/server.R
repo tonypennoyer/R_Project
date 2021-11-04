@@ -21,8 +21,8 @@ shinyServer(function(input, output) {
     })
    
     labels <- reactive({
-          paste("<p>", tb_ordered()$region, "</p>",
-            "<p>","Total Emissions: ", round(tb_ordered()$emissions, digits = 3)," Kt C02","</p>",
+          paste("<h6>", tb_ordered()$region, "</h6>",
+            "<h6>","Total Emissions: ", round(tb_ordered()$emissions, digits = 1)," Kt C02","</h6>",
             sep = "")
     })
     
@@ -35,8 +35,11 @@ shinyServer(function(input, output) {
                         smoothFactor = 0.5,
                         color = 'white',
                         fillOpacity = 0.8,
-                        fillColor = pal(tb_ordered()$emmissions),
-                        label = lapply(labels(), HTML)) %>%
+                        fillColor = pal(tb_ordered()$emissions),
+                        label = lapply(labels(), HTML),
+                        highlightOptions = highlightOptions(color = "white",
+                                                            weight = 1, bringToFront = FALSE, opacity = 5)) %>%
+            
             addLegend(pal = pal,
                       title = 'Kt of C02',
                       values = (tb_ordered()$emissions),
@@ -44,24 +47,6 @@ shinyServer(function(input, output) {
                       position = 'topright')
     )
     
-    # output$mymap <- renderLeaflet(
-    #     leaflet() %>%
-    #         setView(20,20,2) %>%
-    #         addProviderTiles(providers$Stamen.TopOSMRelief) %>% 
-    #         addPolygons(data = countries,
-    #                     weight = 1,
-    #                     smoothFactor = 0.5,
-    #                     color = 'white',
-    #                     fillOpacity = 0.8,
-    #                     fillColor = pal(tb_ordered()$em_ratio),
-    #                     label = lapply(labels_r(), HTML)) %>%
-    #         addLegend(pal = pal,
-    #                     title = 'Kt of C02',
-    #                     values = (tb_ordered()$em_ratio),
-    #                     opacity = 0.7,
-    #                     position = 'topright')
-    # )
-    # 
     output$summary_table <- renderDataTable(tb_ordered())
 
 })
