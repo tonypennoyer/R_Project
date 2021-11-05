@@ -16,18 +16,36 @@ shinyServer(function(input, output) {
             filter(Year == input$year_input)
     })
     
+    tb_update_2 <- reactive({
+        tb_update() %>% 
+            arrange(emissions) %>% 
+            mutate(tot_emissions_rank = row_number()) %>% 
+            arrange(em_ratio) %>%
+            mutate(emissions_per_capita_rank = row_number()) %>%
+            mutate(sup_rat = case_when(emissions_per_capita_rank %% 10 == 1 & (is.element(emissions_per_capita_rank, teen_nums) == FALSE) ~ 'st',
+                                       emissions_per_capita_rank %% 10 == 2 & (is.element(emissions_per_capita_rank, teen_nums) == FALSE) ~ 'nd',
+                                       emissions_per_capita_rank %% 10 == 3 & (is.element(emissions_per_capita_rank, teen_nums) == FALSE) ~ 'rd',
+                                       TRUE ~ 'th')) %>% 
+            mutate(sup_tot = case_when(tot_emissions_rank %% 10 == 1 & (is.element(tot_emissions_rank, teen_nums) == FALSE) ~ 'st',
+                                       tot_emissions_rank %% 10 == 2 & (is.element(tot_emissions_rank, teen_nums) == FALSE) ~ 'nd',
+                                       tot_emissions_rank %% 10 == 3 & (is.element(tot_emissions_rank, teen_nums) == FALSE) ~ 'rd',
+                                       TRUE ~ 'th'))
+    })
+    
     tb_ordered <- reactive ({
-        tb_update()[order(match(tb_update()$region, countries$GEOUNIT)),]
+        tb_update_2()[order(match(tb_update_2()$region, countries$GEOUNIT)),]
     })
    
     labels <- reactive({
         if (input$dtype == 'emissions') {
-          paste("<strong>", tb_ordered()$region, "</strong>",
-            "<h6>", round(tb_ordered()$emissions, digits = 1)," kt C02","</h6>",
+          paste("<h6>","<b>", tb_ordered()$region, "</b>","</h6>",
+            "<h6>", "<b>",round(tb_ordered()$emissions, digits = 1),"</b>"," kt C0","<sub>",'2',"</sub>","</h6>",
+            "<h6>","<b>", tb_ordered()$tot_emissions_rank,"<sup>",tb_ordered()$sup_tot,"</sup>","</b>",' out of ','159', "</h6>",
             sep = "")
         } else {
-            paste("<strong>", tb_ordered()$region, "</strong>",
-                  "<h6>", round(tb_ordered()$em_ratio, digits = 1)," t C02","</h6>",
+            paste("<h6>","<b>", tb_ordered()$region, "</b>","</h6>",
+                  "<h6>", "<b>",round(tb_ordered()$em_ratio, digits = 1),"</b>"," t C0","<sub>",'2',"</sub>","</h6>",
+                  "<h6>","<b>", tb_ordered()$emissions_per_capita_rank,"<sup>",tb_ordered()$sup_rat,"</sup>","</b>",' out of ','159', "</h6>",
                   sep = "")
         }
     })
@@ -47,7 +65,7 @@ shinyServer(function(input, output) {
                             fillOpacity = 0.8,
                             fillColor = pal(tb_ordered()$emissions),
                             label = lapply(labels(), HTML),
-                            highlightOptions = highlightOptions(color = "white",
+                            highlightOptions = highlightOptions(color = "black",
                                                                 weight = 1,
                                                                 bringToFront = TRUE,
                                                                 opacity = 5)) %>%
@@ -58,8 +76,8 @@ shinyServer(function(input, output) {
                           opacity = 0.7,
                           position = 'topright')
         } else {
-            bins2= c(0,1,3,7,70)
-            pal2= colorBin('Reds', domain = c(0,70),bins = bins2)
+            bins2= c(0,1,2,5,10,20,90)
+            pal2= colorBin('Blues', domain = c(0,90),bins = bins2)
             leaflet() %>%
                 setView(20,20,2) %>%
                 addProviderTiles(providers$Stamen.TopOSMRelief) %>% 
@@ -70,13 +88,13 @@ shinyServer(function(input, output) {
                             fillOpacity = 0.8,
                             fillColor = pal2(tb_ordered()$em_ratio),
                             label = lapply(labels(), HTML),
-                            highlightOptions = highlightOptions(color = "white",
-                                                                weight = 1,
+                            highlightOptions = highlightOptions(color = "black",
+                                                                weight = 1.5,
                                                                 bringToFront = TRUE,
                                                                 opacity = 5)) %>%
                 
                 addLegend(pal = pal2,
-                          title = 'Kt of C02',
+                          title = 't of C02',
                           values = (tb_ordered()$em_ratio),
                           opacity = 0.7,
                           position = 'topright')

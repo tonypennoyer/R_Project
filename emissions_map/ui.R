@@ -12,9 +12,11 @@ library(dplyr)
 
 countries <- readOGR('/Users/tonypennoyer/Desktop/R_data/ne_110m_admin_0_countries/ne_110m_admin_0_countries.shp')
 tb <- read.csv('/Users/tonypennoyer/desktop/R_data/emissionsWpop.csv')
+tb = subset(tb, select = -c(X,rank_num))
 tb <- subset(tb, is.element(tb$region,countries$GEOUNIT))
 countries <- subset(countries, is.element(countries$GEOUNIT,tb$region))
 tb <- tb[order(match(tb$region, countries$GEOUNIT)),]
+teen_nums <- c(11,12,13,111,112,113)
 
 ui <- dashboardPage(
     skin = 'red',
@@ -30,9 +32,12 @@ ui <- dashboardPage(
                     c("Total Emissions" = "emissions",
                       "Emissions per capita" = "em_ratio"),
                     selected = "Total Emissions")
+        # menuItem("Dashboard",tabName = 'dashboard'),
+        # menuItem("What are Food Emissions?",tabName = 'what')
     ),
     dashboardBody(
-        fluidRow(box(width = 12, leafletOutput(outputId = "mymap"))),
-        fluidRow(box(width = 12, dataTableOutput(outputId = 'summary_table')))
-    )
+        
+                fluidRow(box(width = 12, leafletOutput(outputId = "mymap"))),
+                fluidRow(box(width = 12, dataTableOutput(outputId = 'summary_table'))),
+    ),
 )
