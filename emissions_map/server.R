@@ -18,9 +18,9 @@ shinyServer(function(input, output) {
     
     tb_update_2 <- reactive({
         tb_update() %>% 
-            arrange(emissions) %>% 
+            arrange(desc(emissions)) %>% 
             mutate(tot_emissions_rank = row_number()) %>% 
-            arrange(em_ratio) %>%
+            arrange(desc(em_ratio)) %>%
             mutate(emissions_per_capita_rank = row_number()) %>%
             mutate(sup_rat = case_when(emissions_per_capita_rank %% 10 == 1 & (is.element(emissions_per_capita_rank, teen_nums) == FALSE) ~ 'st',
                                        emissions_per_capita_rank %% 10 == 2 & (is.element(emissions_per_capita_rank, teen_nums) == FALSE) ~ 'nd',
@@ -29,7 +29,12 @@ shinyServer(function(input, output) {
             mutate(sup_tot = case_when(tot_emissions_rank %% 10 == 1 & (is.element(tot_emissions_rank, teen_nums) == FALSE) ~ 'st',
                                        tot_emissions_rank %% 10 == 2 & (is.element(tot_emissions_rank, teen_nums) == FALSE) ~ 'nd',
                                        tot_emissions_rank %% 10 == 3 & (is.element(tot_emissions_rank, teen_nums) == FALSE) ~ 'rd',
-                                       TRUE ~ 'th'))
+                                       TRUE ~ 'th')) %>%
+            group_by(Year) %>%
+            mutate(emissions_global_total = sum(emissions)) %>% 
+            group_by(region) %>%
+            mutate(global_perc = ((emissions / emissions_global_total) * 100))
+            
     })
     
     tb_ordered <- reactive ({
@@ -41,6 +46,7 @@ shinyServer(function(input, output) {
           paste("<h6>","<b>", tb_ordered()$region, "</b>","</h6>",
             "<h6>", "<b>",round(tb_ordered()$emissions, digits = 1),"</b>"," kt C0","<sub>",'2',"</sub>","</h6>",
             "<h6>","<b>", tb_ordered()$tot_emissions_rank,"<sup>",tb_ordered()$sup_tot,"</sup>","</b>",' out of ','159', "</h6>",
+            "<h6>","<b>", round(tb_ordered()$global_perc,digits = 2),"%","</b>"," of global total", "</h6>",
             sep = "")
         } else {
             paste("<h6>","<b>", tb_ordered()$region, "</b>","</h6>",
@@ -68,7 +74,7 @@ shinyServer(function(input, output) {
                             highlightOptions = highlightOptions(color = "black",
                                                                 weight = 1,
                                                                 bringToFront = TRUE,
-                                                                opacity = 5)) %>%
+                                                                fillOpacity = 0.9)) %>%
             
                 addLegend(pal = pal,
                           title = 'Kt of C02',

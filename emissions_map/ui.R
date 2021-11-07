@@ -22,6 +22,9 @@ ui <- dashboardPage(
     skin = 'red',
     dashboardHeader(title = 'Food System Emissions'),
     dashboardSidebar(
+        # sidebarUserPanel("Tony Pennoyer",
+        #                  subtitle = 'NYCDSA Fall 2021 Project',
+        #                  image = "./NYCDSA.png"),
         sliderInput("year_input", label = "Year:",
                     min = min(tb$Year),
                     max = max(tb$Year),
